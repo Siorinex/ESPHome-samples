@@ -1,0 +1,91 @@
+esphome:
+  name: timer
+  platform: ESP8266
+  board: esp_wroom_02
+  board_flash_mode: dout
+
+wifi:
+  ssid:     !secret net1
+  password: !secret net1_password
+  manual_ip:
+    static_ip: 192.168.2.5
+    gateway: 192.168.0.1
+    subnet: 255.255.252.0  
+  
+mqtt:
+  broker:   !secret mqtt
+  username: timer
+  password: !secret mqtt_pass
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret api_pass
+  reboot_timeout: 0s
+
+ota:
+  password: !secret ota_pass
+
+web_server:
+  port: 80
+
+i2c:
+  sda: 0
+  scl: 2
+  scan: True
+  
+sensor:
+  - platform: bme280
+    temperature:
+      name: "Kitchen Temperature"
+      id: bme280_temperature
+    pressure:
+      name: "Kitchen Pressure"
+      id: bme280_pressure
+    humidity:
+      name: "Kitchen Relative Humidity"
+      id: bme280_humidity
+    address: 0x76
+    update_interval: 60s
+  - platform: template
+    name: "Absolute Humidity"
+    lambda: |-
+      const float mw = 18.01534;    // molar mass of water g/mol
+      const float r = 8.31447215;   // Universal gas constant J/mol/K
+      return (6.112 * powf(2.718281828, (17.67 * id(bme280_temperature).state) /
+        (id(bme280_temperature).state + 243.5)) * id(bme280_humidity).state * mw) /
+        ((273.15 + id(bme280_temperature).state) * r); // in grams/m^3
+    update_interval: 60s
+  - platform: template
+    name: "Pressure mmrs"
+    id: pressure_mmrs
+    lambda: |-
+      return ((id(bme280_pressure).state) / 1.333);
+    update_interval: 60s
+
+text_sensor:
+  - platform: mqtt_subscribe
+    name: "CO2"
+    id: co2
+    topic: rc_reciver_315/sensor/mh-z19_co2_value/state
+    
+display:
+  - platform: lcd_pcf8574
+    dimensions: 16x2
+    address: 0x38
+    lambda: |-
+      it.strftime(0, 0, "%H:%M:%S", id(my_time).now());
+      it.printf(10, 0, "%s", id(co2).state.c_str());
+      it.printf(0, 1, "%.0fC %.0f%% %.0fmmrs", id(bme280_temperature).state, id(bme280_humidity).state, id(pressure_mmrs).state);
+
+binary_sensor:
+  - platform: gpio
+    pin: GPIO4
+    name: "PIR Sensor"
+    device_class: motion
+
+time:
+- platform: sntp
+  id: my_time
