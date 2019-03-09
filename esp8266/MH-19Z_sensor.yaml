@@ -1,0 +1,73 @@
+esphome:
+  name: mh19z
+  platform: ESP8266
+  board: esp_wroom_02
+  board_flash_mode: dout
+
+wifi:
+  ssid:     !secret net1
+  password: !secret net1_password
+  manual_ip:
+    # Set this to the IP of the ESP
+    static_ip: 192.168.2.21
+    # Set this to the IP address of the router. Often ends with .1
+    gateway: 192.168.0.1
+    # The subnet of the network. 255.255.255.0 works for most home networks.
+    subnet: 255.255.252.0  
+  
+mqtt:
+  broker:   !secret mqtt
+  username: mh19z
+  password: !secret mqtt_pass
+
+# Enable logging
+logger:
+  hardware_uart: UART1 #UART0 use for MH-19Z
+
+# Enable Home Assistant API
+api:
+  password: !secret api_pass
+  reboot_timeout: 0s
+
+ota:
+  password: !secret ota_pass
+
+web_server:
+  port: 80
+
+output:
+  - platform: esp8266_pwm
+    id: output_component1
+    pin:
+      number: GPIO12
+      inverted: True
+  - platform: esp8266_pwm
+    id: output_component2
+    pin:
+      number: GPIO13
+      inverted: True
+  - platform: esp8266_pwm
+    id: output_component3
+    pin:
+      number: GPIO14
+      inverted: True
+      
+light:
+  - platform: rgb
+    name: "Hall Indicate Lights"
+    red: output_component1
+    green: output_component2
+    blue: output_component3
+
+uart:
+  tx_pin: GPIO1
+  rx_pin: GPIO3
+  baud_rate: 9600
+
+sensor:
+  - platform: mhz19
+    co2:
+      name: "MH-Z19 CO2 Value"
+    temperature:
+      name: "MH-Z19 Temperature"
+    update_interval: 60s
