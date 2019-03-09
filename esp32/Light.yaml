@@ -1,0 +1,157 @@
+esphome:
+  name: light2
+  platform: ESP32
+  board: esp-wrover-kit
+
+wifi:
+  networks:
+  - ssid: !secret net1
+    password: !secret net1_password
+  - ssid: !secret net2
+    password: !secret net2_password
+  - ssid: !secret net3
+    password: !secret net3_password
+  manual_ip:
+    # Set this to the IP of the ESP
+    static_ip: 192.168.2.12
+    # Set this to the IP address of the router. Often ends with .1
+    gateway: 192.168.0.1
+    # The subnet of the network. 255.255.255.0 works for most home networks.
+    subnet: 255.255.252.0  
+  
+mqtt:
+  broker:   !secret mqtt
+  username: light
+  password: !secret mqtt_pass
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret api_pass
+  reboot_timeout: 0s
+
+ota:
+  password: !secret ota_pass
+
+web_server:
+  port: 80
+
+status_led:
+    id: light_module_status
+    pin:
+      number: GPIO2
+
+output:
+  - platform: gpio
+    id: relay1
+    pin:
+      number: GPIO27
+      inverted: True
+
+  - platform: gpio
+    id: relay2
+    pin:
+      number: GPIO26
+      inverted: True
+
+  - platform: gpio
+    id: relay3
+    pin:
+      number: GPIO25
+      inverted: True
+
+  - platform: gpio
+    id: relay4
+    pin:
+      number: GPIO33
+      inverted: True
+
+  - platform: gpio
+    id: relay5
+    pin:
+      number: GPIO32
+      inverted: True
+
+  - platform: gpio
+    id: relay6
+    pin:
+      number: GPIO18
+      inverted: True
+
+  - platform: gpio
+    id: relay7
+    pin:
+      number: GPIO19
+      inverted: True
+
+  - platform: gpio
+    id: relay8
+    pin:
+      number: GPIO21
+      inverted: True
+
+  - platform: gpio
+    id: relay9
+    pin:
+      number: GPIO22
+      inverted: True
+
+  - platform: gpio
+    id: relay10
+    pin:
+      number: GPIO23
+      inverted: True
+
+
+light:
+  - platform: binary
+    output: relay1
+    id: kitchen_light
+    name: "Kitchen Light"
+
+  - platform: binary
+    output: relay2
+    id: reserv_light_2
+    name: "Reserv 2"
+
+  - platform: binary
+    output: relay3
+    id: reserv_light_3
+    name: "Reserv 3"
+
+  - platform: binary
+    output: relay4
+    id: reserv_light_4
+    name: "Reserv 4"
+
+  - platform: binary
+    output: relay5
+    id: toilet_light
+    name: "Toilet Light"
+
+  - platform: binary
+    output: relay6
+    id: bathroom_light
+    name: "Bathroom Light"
+
+  - platform: binary
+    output: relay7
+    id: lab_light
+    name: "Laboratory Light"
+
+  - platform: binary
+    output: relay8
+    id: hall_light_0
+    name: "Hall Light 0"
+
+  - platform: binary
+    output: relay9
+    id: hall_light_1
+    name: "Hall Light 1"
+
+  - platform: binary
+    output: relay10
+    id: hall_light_2
+    name: "Hall Light 2"
