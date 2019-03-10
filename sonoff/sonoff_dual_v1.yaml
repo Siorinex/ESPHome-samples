@@ -1,0 +1,97 @@
+esphome:
+  name: torcher
+  platform: ESP8266
+  board: esp01_1m
+  board_flash_mode: dout
+
+wifi:
+  ssid:     !secret net1
+  password: !secret net1_password
+  manual_ip:
+    static_ip: 192.168.2.3
+    gateway: 192.168.0.1
+    subnet: 255.255.252.0  
+  
+mqtt:
+  broker:   !secret mqtt
+  username: torcher
+  password: !secret mqtt_pass
+
+# Enable logging
+logger:
+  hardware_uart: UART1 #UART0 - slave controller for relay
+
+# Enable Home Assistant API
+api:
+  password:          !secret api_pass
+  reboot_timeout: 0s
+
+ota:
+  password: !secret ota_pass
+
+web_server:
+  port: 80
+
+uart:
+  tx_pin: GPIO01
+  rx_pin: GPIO03
+  baud_rate: 19200
+
+switch:
+  - platform: uart
+    id: relay_12_off
+    data: [0xA0, 0x04, 0x00, 0xA1]
+    
+  - platform: uart
+    id: relay_1_on
+    data: [0xA0, 0x04, 0x01, 0xA1]
+    
+  - platform: uart
+    id: relay_2_on
+    data: [0xA0, 0x04, 0x02, 0xA1]
+    
+  - platform: uart
+    id: relay_12_on
+    data: [0xA0, 0x04, 0x03, 0xA1]
+ 
+  - platform: template
+    id: lamp1
+    name: "torcher_light1"
+    turn_on_action:
+      if:
+        condition:
+          switch.is_off: lamp2
+        then:
+          - switch.turn_on: relay_1_on
+        else:
+          - switch.turn_on: relay_12_on
+    turn_off_action:
+      if:
+        condition:
+          switch.is_off: lamp2
+        then:
+          - switch.turn_on: relay_12_off
+        else:
+          - switch.turn_on: relay_2_on
+    optimistic: true
+
+  - platform: template
+    id: lamp2
+    name: "torcher_light2"
+    turn_on_action:
+      if:
+        condition:
+          switch.is_off: lamp1
+        then:
+          - switch.turn_on: relay_2_on
+        else:
+          - switch.turn_on: relay_12_on
+    turn_off_action:
+      if:
+        condition:
+          switch.is_off: lamp1
+        then:
+          - switch.turn_on: relay_12_off
+        else:
+          - switch.turn_on: relay_1_on
+    optimistic: true
