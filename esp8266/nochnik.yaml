@@ -1,0 +1,170 @@
+esphome:
+  name: night1
+  platform: ESP8266
+#  board: nodemcu
+  board: esp_wroom_02
+  board_flash_mode: dout
+
+wifi:
+  ssid:     !secret net1
+  password: !secret net1_password
+  manual_ip:
+    # Set this to the IP of the ESP
+    static_ip: 192.168.2.51
+    # Set this to the IP address of the router. Often ends with .1
+    gateway: 192.168.0.1
+    # The subnet of the network. 255.255.255.0 works for most home networks.
+    subnet: 255.255.252.0  
+  
+# Enable logging
+logger:
+  hardware_uart: UART1
+
+# Enable Home Assistant API
+api:
+  password: !secret api_pass
+  reboot_timeout: 0s
+
+ota:
+  password: !secret ota_pass
+
+web_server:
+  port: 80
+
+light:
+  - platform: rgb
+    name: "Night Status Light"
+    red: output_component1
+    green: output_component2
+    blue: output_component3
+
+  - platform: neopixelbus
+    type: GRB
+    pin: GPIO3
+    num_leds: 7
+    variant: WS2812
+    name: "NightNeo"
+    effects:
+      - addressable_rainbow:
+          name: Rainbow
+          speed: 10
+          width: 50
+      - addressable_lambda:
+          name: "Lava"
+          update_interval: 10ms
+          lambda: |-
+            static int size = 0;
+            static int maxsize = 5;
+            static int posX = 0;
+            static int speed = 0;
+            
+            
+            
+      - addressable_lambda:
+          name: "Police"
+          update_interval: 10ms
+          lambda: |-
+            static int col = 0;
+            static int delta = 5;
+            
+            for (int i = 0; i < it.size(); i++) 
+              {
+              if (col > 0)
+                {
+                it[i] = ESPColor(col, 0, 0);
+                }
+              if (col < 0)
+                {
+                it[i] = ESPColor(0, 0, -col);
+                }
+              }
+              
+            col+=delta;
+            
+            if (col >= 255)
+              {
+                col = 255;
+                delta=-5;
+              }
+              
+            if (col <= -255)
+              {
+                col = -255;
+                delta=+5;
+              }
+            
+      - addressable_lambda:
+          name: "Fire ease"
+          update_interval: 60ms
+          lambda: |-
+            static byte heat1[7];
+            
+            int Cooling = 55;
+            int Sparking = 120;
+            int from = 0;
+            int to = 7;
+            
+            int cooldown;
+
+            int dir = 1;
+
+            // Step 1.  Cool down every cell a little
+            for( int i = from; i < to; i = i + dir) {
+              cooldown = random(0, ((Cooling * 10) / 20) + 2);
+              if(cooldown>heat1[i]) {
+                heat1[i]=0;
+              } else {
+                heat1[i]=heat1[i]-cooldown;
+              }
+            }
+            
+            // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+            for( int k = to - 1; k >= from + 2; k = k - dir) {
+              heat1[k] = (heat1[k - dir] + heat1[k - dir - dir] + heat1[k - dir - dir]) / 3;
+            }
+            
+            // Step 3.  Randomly ignite new 'sparks' near the bottom
+            if( random(255) < Sparking ) {
+              int y = random(2);
+              y = (from + y);
+              heat1[y] = random(120,160);
+            } 
+
+            // Step 4.  Convert heat to LED colors
+            for( int j = from; j < to; j = j + dir) {
+              byte t192 = round((heat1[j]/255.0)*191);
+ 
+              // calculate ramp up from
+              byte heatramp = t192 & 0x3F; // 0..63
+              heatramp <<= 2; // scale up to 0..252
+ 
+              // figure out which third of the spectrum we're in:
+              if( t192 > 0x80) {                     // hottest
+                it[j] = ESPColor(255, 255, heatramp);
+              } else if( t192 > 0x40 ) {             // middle
+                it[j] = ESPColor(255, heatramp, 0);
+              } else {                               // coolest
+                it[j] = ESPColor(heatramp, 0, 0);
+              }
+            }
+
+
+output:
+  - platform: esp8266_pwm
+    id: output_component1
+    pin:
+      number: GPIO12
+      inverted: True
+      
+  - platform: esp8266_pwm
+    id: output_component2
+    pin:
+      number: GPIO13
+      inverted: True
+      
+  - platform: esp8266_pwm
+    id: output_component3
+    pin:
+      number: GPIO14
+      inverted: True
+
